@@ -59,7 +59,6 @@ def item_vm() -> dict:
             "uptime": parse_uptime_seconds(vm["uptime"]),
             "cpu": {
                 "cores": vm["cpus"],
-                "util": vm["cpu"],
             },
             "memory": {
                 "total": vm["maxmem"],
