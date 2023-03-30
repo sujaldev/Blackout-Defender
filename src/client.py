@@ -43,6 +43,14 @@ def item_disks() -> list:
     } for partition in ps.disk_partitions()]
 
 
+def item_network() -> dict:
+    net_stats = ps.net_io_counters()
+    return {
+        "bytes_in": net_stats.bytes_recv,
+        "bytes_out": net_stats.bytes_sent,
+    }
+
+
 def item_vm() -> dict:
     is_proxmox_host = "pve" in subprocess.check_output(["uname", "-r"]).decode()
     if not is_proxmox_host:
