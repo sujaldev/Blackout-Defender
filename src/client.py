@@ -51,6 +51,11 @@ def item_network() -> dict:
     }
 
 
+def item_thermals() -> dict:
+    # TODO: This one is going to be a bit tricky.
+    pass
+
+
 def item_vm() -> dict:
     is_proxmox_host = "pve" in subprocess.check_output(["uname", "-r"]).decode()
     if not is_proxmox_host:
