@@ -53,7 +53,7 @@ def item_network() -> dict:
 
 def item_thermals() -> dict:
     # TODO: This one is going to be a bit tricky.
-    pass
+    return {}
 
 
 def item_vm() -> dict:
@@ -85,9 +85,13 @@ def item_vm() -> dict:
     return vms
 
 
-if __name__ == "__main__":
-    print({
+def parse_items() -> dict:
+    return {
         key.removeprefix("item_"): globals()[key]()
         for key in
         [f for f in globals().keys() if f.startswith("item_")]
-    })
+    }
+
+
+if __name__ == "__main__":
+    print(parse_items())
