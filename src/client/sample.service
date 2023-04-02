@@ -1,0 +1,11 @@
+[Unit]
+Description=Blackout Defender client service
+After=multi-user.target
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/path/to/client/binary --host proxmox.lan --port 54321
+
+[Install]
+WantedBy=multi-user.target
