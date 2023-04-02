@@ -49,6 +49,7 @@ if __name__ == "__main__":
         Queue(),
         GET_INTERVAL,
         POST_INTERVAL,
+        SHUTDOWN_DELAY
     ).run(
         HOST, PORT, debug=False
     )

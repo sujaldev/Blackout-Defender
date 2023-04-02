@@ -1,5 +1,4 @@
 HOST = "0.0.0.0"
-HOST2 = "0.0.0.0"
 PORT = 54321
 GET_INTERVAL = 5  # How often will the client check for outages.
 POST_INTERVAL = 10  # How often will the TUI update.
