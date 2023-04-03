@@ -94,4 +94,4 @@ def parse_items() -> dict:
 
 
 if __name__ == "__main__":
-    print(parse_items())
+    print(json.dumps(parse_items()))
