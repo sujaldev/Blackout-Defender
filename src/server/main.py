@@ -1,9 +1,8 @@
 from multiprocessing import Process, Manager
 
 from cli import *
+from tui import TUI
 from server import Server
-
-from textual.demo import app
 
 
 def main():
@@ -26,8 +25,7 @@ def main():
         server_process = Process(target=server.run, daemon=True)
         server_process.start()
 
-        # TODO: implement TUI
-        app.run()
+        TUI(shared_data).run()
     else:
         server.run()
 
