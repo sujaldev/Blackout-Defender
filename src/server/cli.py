@@ -6,7 +6,7 @@ __all__ = [
 ]
 
 parser = argparse.ArgumentParser(
-    prog="bd",
+    prog="bd-server",
     description="Blackout Defender shuts down your proxmox server connected to a dumb UPS."
 )
 
