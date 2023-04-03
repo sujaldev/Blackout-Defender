@@ -60,3 +60,117 @@ class Server:
         self.shared_data: dict = shared_data
 
         self.kill_stats_loop = None
+
+    @property
+    def client_is_alive(self) -> bool:
+        return subprocess.call(
+            ["ping", "-c", str(self.PING_RETRY_LIMIT), self.client],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        ) == 0
+
+    @property
+    def on_mains_power(self) -> bool:
+        battery = psutil.sensors_battery()
+        if battery is None:
+            # Returning True because if you're running this on a machine without a battery, you're probably testing and
+            # also if you think about it, on a desktop, battery status is always True ;)
+            return True
+        return battery.power_plugged
+
+    def send_wol_packet(self):
+        send_magic_packet(self.mac_address)
+
+    def wait_for_client_wakeup(self) -> None:
+        # Blocks execution until the client responds to pings.
+        while True:
+            if self.client_is_alive:
+                return
+
+            # Don't wake up the client if there's no power.
+            if self.on_mains_power:
+                self.send_wol_packet()
+
+            sleep(self.WOL_PACKET_INTERVAL)
+
+    def ssh_connect(self) -> bool:
+        """
+        Will establish an ssh connection, accessible via `Server.connection`.
+
+        :return: True if ssh connection was successfully established, False otherwise.
+        """
+        retry_count = 0
+
+        while retry_count < self.SSH_RETRY_LIMIT:
+            try:
+                # do your fancy ssh-fu in the ~/.ssh/config file, trying to keep this simple.
+                self.connection = Connection(self.client)
+                self.connection.open()
+                self.shared_data["connection"] = True
+                return True
+            except SSHException:
+                retry_count += 1
+
+        return False
+
+    def wait_for_connection(self):
+        self.wait_for_client_wakeup()
+        while not self.ssh_connect():
+            self.wait_for_client_wakeup()
+            sleep(self.SSH_RETRY_INTERVAL)
+
+    def battery_loop(self) -> bool:
+        """
+        :return: True if no shutdown was issued, False otherwise.
+        """
+
+        if self.on_mains_power:
+            return True
+
+        start_time = int(time())
+        shutdown_time = start_time + int(self.SHUTDOWN_DELAY * 60)
+
+        self.shared_data["shutdown_scheduled"] = True
+        self.shared_data["shutdown_timestamp"] = shutdown_time  # epoch time for when the shutdown will be executed.
+
+        # Execute shutdown delay
+        while time() <= shutdown_time:
+            if self.on_mains_power:
+                self.shared_data["shutdown_scheduled"] = False
+                del self.shared_data["shutdown_timestamp"]
+                return True
+
+            sleep(self.BATTERY_CHECK_INTERVAL_DURING_SHUTDOWN)
+
+        # Still no power, execute shutdown.
+        self.connection.run("systemctl poweroff")
+        self.connection.close()
+        self.connection = None
+        return False
+
+    def stats_loop(self):
+        self.shared_data["stats"] = json.loads(self.connection.run("bd-client").stdout)
+
+    def main(self):
+        # Don't call this directly, call `Server.run` instead.
+
+        while True:
+            self.wait_for_connection()
+            self.kill_stats_loop = call_repeatedly(self.STATS_CHECK_INTERVAL, self.stats_loop)
+            while self.battery_loop():
+                sleep(self.BATTERY_CHECK_INTERVAL)
+            self.kill_stats_loop()
+
+    def run(self) -> None:
+        # Main function to start the server, do not call `Server.main` directly.
+
+        try:
+            self.main()
+        except SSHException:
+            if self.connection is not None:
+                self.connection.close()
+                self.connection = None
+            self.run()
+        except KeyboardInterrupt:
+            if self.connection is not None:
+                self.connection.close()
