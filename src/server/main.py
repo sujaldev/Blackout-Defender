@@ -1,3 +1,4 @@
+from contextlib import redirect_stdout
 from multiprocessing import Process, Manager
 
 from cli import *
@@ -23,7 +24,8 @@ def main():
 
     if UI:
         server_process = Process(target=server.run, daemon=True)
-        server_process.start()
+        with redirect_stdout(None):
+            server_process.start()
 
         TUI(shared_data).run()
     else:
