@@ -81,6 +81,9 @@ class Server:
     def send_wol_packet(self):
         send_magic_packet(self.mac_address)
 
+    def ssh_exec(self, cmd: str) -> str:
+        return self.connection.run(cmd, hide=True).stdout.strip()
+
     def wait_for_client_wakeup(self) -> None:
         # Blocks execution until the client responds to pings.
         while True:
@@ -143,13 +146,13 @@ class Server:
             sleep(self.BATTERY_CHECK_INTERVAL_DURING_SHUTDOWN)
 
         # Still no power, execute shutdown.
-        self.connection.run("systemctl poweroff")
+        self.ssh_exec("systemctl poweroff")
         self.connection.close()
         self.connection = None
         return False
 
     def stats_loop(self):
-        self.shared_data["stats"] = json.loads(self.connection.run("bd-client").stdout)
+        self.shared_data["stats"] = json.loads(self.ssh_exec("bd-client"))
 
     def main(self):
         # Don't call this directly, call `Server.run` instead.
