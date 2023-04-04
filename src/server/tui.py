@@ -4,16 +4,21 @@ from textual.reactive import reactive
 
 
 class Temporary(Static):
-    def __init__(self, shared_data: dict):
+    shared_data = reactive("Waiting...")
+
+    def __init__(self, sd: dict):
         super().__init__()
-        self.shared_data = shared_data
+        self.__sd = sd
         self.set_interval(5, self.update_shared_data)
 
     def update_shared_data(self):
-        self.shared_data = str(self.shared_data)
+        self.shared_data = str(self.__sd.get("stats", "Waiting for stats..."))
 
     def watch_stats(self):
-        self.update(str(self.shared_data))
+        self.update(self.shared_data)
+
+    def render(self):
+        return self.shared_data
 
 
 class TUI(App):
