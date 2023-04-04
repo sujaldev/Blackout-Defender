@@ -19,7 +19,8 @@ def main():
         shared_data,
         BATTERY_CHECK_INTERVAL,
         STATS_CHECK_INTERVAL,
-        SHUTDOWN_DELAY
+        SHUTDOWN_DELAY,
+        UI
     )
 
     if UI:

@@ -27,6 +27,8 @@ class Server:
     SHUTDOWN_DELAY = 4  # how many minutes to wait before shutting down client after detecting an outage
     BATTERY_CHECK_INTERVAL_DURING_SHUTDOWN = 1  # value for BATTERY_CHECK_INTERVAL when a shutdown has been scheduled.
 
+    UI = True
+
     def __init__(
             self,
             client: str,
@@ -35,6 +37,7 @@ class Server:
             battery_check_interval: int = None,
             stats_check_interval: int = None,
             shutdown_delay: int = None,
+            ui: bool = None,
     ):
         """
         This class will run the main process which will perform all the main "protection" functionality, the TUI will
@@ -53,6 +56,8 @@ class Server:
             self.STATS_CHECK_INTERVAL = stats_check_interval
         if shutdown_delay is not None:
             self.SHUTDOWN_DELAY = shutdown_delay
+        if ui is not None:
+            self.UI = ui
 
         self.connection: Connection | None = None
 
@@ -159,10 +164,15 @@ class Server:
 
         while True:
             self.wait_for_connection()
-            self.kill_stats_loop = call_repeatedly(self.STATS_CHECK_INTERVAL, self.stats_loop)
+
+            if self.UI:
+                self.kill_stats_loop = call_repeatedly(self.STATS_CHECK_INTERVAL, self.stats_loop)
+
             while self.battery_loop():
                 sleep(self.BATTERY_CHECK_INTERVAL)
-            self.kill_stats_loop()
+
+            if self.UI:
+                self.kill_stats_loop()
 
     def run(self) -> None:
         # Main function to start the server, do not call `Server.main` directly.
