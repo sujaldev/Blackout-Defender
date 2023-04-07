@@ -1,0 +1,11 @@
+[Unit]
+Description=Blackout Defender (Daemon Mode)
+After=multi-user.target
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/path/to/compiled/binary -d -m DE:AD:BE:EF
+
+[Install]
+WantedBy=multi-user.target
