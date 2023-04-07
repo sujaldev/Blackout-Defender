@@ -8,3 +8,8 @@ know the exact name, the ones that open on `Ctrl+Alt+F1-F9`).
 
 > **Note** If it isn't obvious, you have to keep the laptop plugged in, otherwise there's no way to tell if there's
 > a power outage or not.
+
+## Other dumb approaches
+
+Checkout the other branches in this repo for other approaches, I find that the main branch is the simplest (doesn't
+require installing anything on your proxmox server, if you ignore the TUI part).
