@@ -1,5 +1,6 @@
 fabric
 paramiko
 git+https://github.com/sujaldev/psutil
+sshconf
 textual[dev]
 wakeonlan

@@ -3,12 +3,14 @@ from __future__ import annotations
 import json
 import subprocess
 from time import sleep, time
+from os.path import expanduser
 
 from utils import call_repeatedly
 
 import psutil
 from fabric import Connection
 from paramiko import SSHException
+from sshconf import read_ssh_config
 from wakeonlan import send_magic_packet
 
 
@@ -49,6 +51,7 @@ class Server:
 
         self.client = client
         self.mac_address = mac_address
+        self.ip = read_ssh_config(expanduser("~/.ssh/config")).host(client)["hostname"]
 
         if battery_check_interval is not None:
             self.BATTERY_CHECK_INTERVAL = battery_check_interval
@@ -69,7 +72,7 @@ class Server:
     @property
     def client_is_alive(self) -> bool:
         return subprocess.call(
-            ["ping", "-c", str(self.PING_RETRY_LIMIT), self.client],
+            ["ping", "-c", str(self.PING_RETRY_LIMIT), str(self.ip)],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         ) == 0
