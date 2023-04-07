@@ -27,17 +27,17 @@ source venv/bin/activate
 pip install -r requirements.txt pyinstaller
 ```
 
-#### Build client (on laptop)
+#### Build client (on proxmox)
+
+Your proxmox server may not have all the build tools required for this, if you wish to keep it that way, set up a debian
+virtual machine and perform the build there.
 
 ```bash
 cd src/client/
 pyinstaller --onefile --name bd-client main.py
 ```
 
-#### Build server (on proxmox)
-
-Your proxmox server may not have all the build tools required for this, if you wish to keep it that way, set up a debian
-virtual machine and perform the build there.
+#### Build server (on laptop)
 
 ```bash
 cd src/server/
