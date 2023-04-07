@@ -154,9 +154,11 @@ class Server:
             sleep(self.BATTERY_CHECK_INTERVAL_DURING_SHUTDOWN)
 
         # Still no power, execute shutdown.
-        self.ssh_exec("systemctl poweroff")
-        self.connection.close()
-        self.connection = None
+        try:
+            self.ssh_exec("systemctl poweroff")
+            self.connection.close()
+        except SSHException:
+            self.connection = None
         return False
 
     def stats_loop(self):
