@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import subprocess
 from time import sleep, time
 from os.path import expanduser
@@ -12,6 +13,17 @@ from fabric import Connection
 from paramiko import SSHException
 from sshconf import read_ssh_config
 from wakeonlan import send_magic_packet
+
+logging.basicConfig(
+    level=logging.CRITICAL,
+    format="[%(asctime)s] [%(levelname)s] %(message)s",
+    datefmt="%a %d-%b-%Y %H:%M:%S"
+)
+for _ in logging.root.manager.loggerDict:
+    logging.getLogger(_).disabled = True
+
+logger = logging.getLogger(__file__)
+logger.setLevel(logging.DEBUG)
 
 
 class Server:
@@ -87,21 +99,31 @@ class Server:
         return battery.power_plugged
 
     def send_wol_packet(self):
+        logger.info("Sending WoL Packet...")
         send_magic_packet(self.mac_address)
 
     def ssh_exec(self, cmd: str) -> str:
+        logger.debug(f"Executing via SSH: '{cmd}'")
         return self.connection.run(cmd, hide=True).stdout.strip()
 
     def wait_for_client_wakeup(self) -> None:
         # Blocks execution until the client responds to pings.
+
+        logger.info("Waiting for client wakeup...")
+
         while True:
             if self.client_is_alive:
+                logger.info("Client is alive!")
                 return
 
             # Don't wake up the client if there's no power.
             if self.on_mains_power:
+                logger.info("Detected mains power but client is still not alive...")
                 self.send_wol_packet()
+            else:
+                logger.info("Power outage detected...")
 
+            logger.info(f"Waiting for {'boot' if self.on_mains_power else 'power'}...")
             sleep(self.WOL_PACKET_INTERVAL)
 
     def ssh_connect(self) -> bool:
@@ -120,23 +142,30 @@ class Server:
                 self.shared_data["connection"] = True
                 return True
             except SSHException:
+                logger.error("Encountered error while establishing SSH connection.")
                 retry_count += 1
 
+        self.shared_data["connection"] = False
         return False
 
     def wait_for_connection(self):
+        logger.info("Waiting for connection...")
         self.wait_for_client_wakeup()
         while not self.ssh_connect():
             self.wait_for_client_wakeup()
             sleep(self.SSH_RETRY_INTERVAL)
+        logger.info("*" * 10 + " Connection Established " + "*" * 10)
 
     def battery_loop(self) -> bool:
         """
         :return: True if no shutdown was issued, False otherwise.
         """
 
+        logger.info("Checking battery!")
         if self.on_mains_power:
             return True
+
+        logger.critical("Power outage detected.")
 
         start_time = int(time())
         shutdown_time = start_time + int(self.SHUTDOWN_DELAY * 60)
@@ -149,12 +178,14 @@ class Server:
             if self.on_mains_power:
                 self.shared_data["shutdown_scheduled"] = False
                 del self.shared_data["shutdown_timestamp"]
+                logger.info("Back on mains power, aborting shutdown!")
                 return True
 
             sleep(self.BATTERY_CHECK_INTERVAL_DURING_SHUTDOWN)
 
         # Still no power, execute shutdown.
         try:
+            logger.critical("!" * 10 + " SHUTDOWN ISSUED " + "!" * 10)
             self.ssh_exec("systemctl poweroff")
             self.connection.close()
         except SSHException:
@@ -173,14 +204,18 @@ class Server:
             if self.UI:
                 self.kill_stats_loop = call_repeatedly(self.STATS_CHECK_INTERVAL, self.stats_loop)
 
+            logger.info("Entering battery loop...")
             while self.battery_loop():
                 sleep(self.BATTERY_CHECK_INTERVAL)
+            logger.info("Battery loop exit...")
 
             if self.UI:
                 self.kill_stats_loop()
 
     def run(self) -> None:
         # Main function to start the server, do not call `Server.main` directly.
+
+        logger.info("#" * 20 + " Session Start " + "#" * 20)
 
         try:
             self.main()
