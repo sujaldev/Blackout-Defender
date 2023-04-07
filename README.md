@@ -13,3 +13,46 @@ know the exact name, the ones that open on `Ctrl+Alt+F1-F9`).
 
 Checkout the other branches in this repo for other approaches, I find that the main branch is the simplest (doesn't
 require installing anything on your proxmox server, if you ignore the TUI part).
+
+## Systemd
+
+Modify the `src/server/sample.service` according to your needs, don't forget to change the `/path/to/compiled/binary`
+and `DE:AD:BE:EF` parameters on the `ExecStart` line. Enable and start the service on your laptop.
+
+## Build
+
+It'll be better to build each script on it's intended host, the server script on your laptop and the client script on
+your proxmox server.
+
+#### Setup
+
+```bash
+git clone https://github.com/sujaldev/blackout-defender
+cd blackout-defender
+
+# Setup a virtualenv if you wish (recommended)
+viritualenv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt pyinstaller
+```
+
+#### Build client (on proxmox)
+
+> **Note** Skip this step if you don't plan on using the TUI.
+
+Your proxmox server may not have all the build tools required for this, if you wish to keep it that way, set up a debian
+virtual machine and perform the build there.
+
+```bash
+cd src/client/
+pyinstaller --onefile --name bd-client main.py
+```
+
+#### Build server (on laptop)
+
+```bash
+cd src/server/
+pyinstaller --onefile --name bd-server main.py
+```
