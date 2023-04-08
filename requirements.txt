@@ -1,0 +1,5 @@
+fabric
+paramiko
+git+https://github.com/sujaldev/psutil
+sshconf
+wakeonlan
