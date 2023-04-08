@@ -10,9 +10,9 @@ from utils import call_repeatedly
 
 import psutil
 from fabric import Connection
-from paramiko import SSHException
 from sshconf import read_ssh_config
 from wakeonlan import send_magic_packet
+from paramiko.ssh_exception import SSHException, NoValidConnectionsError
 
 logging.basicConfig(
     level=logging.CRITICAL,
@@ -184,16 +184,18 @@ class Server:
             sleep(self.BATTERY_CHECK_INTERVAL_DURING_SHUTDOWN)
 
         # Still no power, execute shutdown.
-        try:
-            logger.critical("!" * 10 + " SHUTDOWN ISSUED " + "!" * 10)
-            self.ssh_exec("systemctl poweroff")
-            self.connection.close()
-        except SSHException:
-            self.connection = None
+        logger.critical("!" * 10 + " SHUTDOWN ISSUED " + "!" * 10)
+        self.ssh_exec("systemctl poweroff")
+        self.connection.close()
+        self.connection = None
+        sleep(20)  # Arbitrary sleep value to give time to the SSH service to shut down.
         return False
 
     def stats_loop(self):
-        self.shared_data["stats"] = json.loads(self.ssh_exec("bd-client"))
+        try:
+            self.shared_data["stats"] = json.loads(self.ssh_exec("bd-client"))
+        except (SSHException, NoValidConnectionsError):
+            pass
 
     def main(self):
         # Don't call this directly, call `Server.run` instead.
@@ -217,13 +219,14 @@ class Server:
 
         logger.info("#" * 20 + " Session Start " + "#" * 20)
 
-        try:
-            self.main()
-        except SSHException:
-            if self.connection is not None:
-                self.connection.close()
+        while True:
+            try:
+                self.main()
+            except (SSHException, NoValidConnectionsError):
+                if self.connection is not None:
+                    self.connection.close()
                 self.connection = None
-            self.run()
-        except KeyboardInterrupt:
-            if self.connection is not None:
-                self.connection.close()
+            except KeyboardInterrupt:
+                if self.connection is not None:
+                    self.connection.close()
+                return
