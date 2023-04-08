@@ -48,7 +48,9 @@ class Server:
         return battery.power_plugged
 
     def execute_shutdown_cmd(self):
-        Connection(self.client).run("systemctl poweroff", hide=True)
+        conn = Connection(self.client)
+        conn.run("systemctl poweroff", hide=True)
+        conn.close()
 
     def wakeup_client(self):
         send_magic_packet(self.mac_address)
